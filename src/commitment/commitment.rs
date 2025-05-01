@@ -6,7 +6,7 @@ use crate::ecdsa::ecdsa::{P256Point};
 use rug::Integer;
 use fxhash::FxHashMap as HashMap;
 use crate::ir::term::{Value};
-use crate::poseidon_const::{DEFAULT_MODULUS, POSEIDON_C, POSEIDON_M};
+use super::poseidon_const::{DEFAULT_MODULUS, POSEIDON_C, POSEIDON_M};
 use p256::{Scalar, ProjectivePoint};
 use crate::zkconst::MAX_BITWIDTH;
 use rand_core::RngCore;
@@ -169,7 +169,7 @@ impl P256Commit {
     /// Commit to an P256 Point
     pub fn new(point: ProjectivePoint, base_point: ProjectivePoint, mut rng: impl RngCore) -> Self {
         let v: Scalar = Scalar::random(&mut rng);
-        let comm: ProjectivePoint = (base_point * v) + point; // not sure
+        let comm: ProjectivePoint = (base_point * v) + point;
         Self {
             opening: scalar_to_integer(&v),
             comm: comm,

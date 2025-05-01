@@ -35,6 +35,9 @@ For more information, see our [paper](https://eprint.iacr.org/2025/538).
     cargo run --release --example zk -- --inputs zok_src/ed25519/right_field/test_verify_64.zok.pin --action prove --proof-impl dorian --pfcurve t25519
     cargo run --release --example zk -- --inputs zok_src/ed25519/right_field/test_verify_64.zok.vin --action verify --proof-impl dorian --pfcurve t25519
 
+#### Profiling ECDSA Ring (Ring Size = $2^1$, $2^2$, ..., $2^{14}$)
+    bash scripts/ecdsa_ring.sh # Results are written to ecdsa_ring_<current date>.csv
+
 ## NOTES:
 
 Currently both the SHA256 and SHA512 implementations are restricted to certain message lengths. They each essentially currently require that the length of the message in bytes is a multiple of 4 and 8 respectively. Consequently, our proofs of posession have the same restriction at present. We plan on fixing this soon.

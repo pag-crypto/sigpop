@@ -247,6 +247,35 @@ impl X509Certificate {
 }
 
 
+pub fn read_example_cert() -> X509Certificate {
+    let signed_certificate_path = "./example_cert/cloudflare/www.cloudflare.com.cer";
+    let issuer_certificate_path = "./example_cert/cloudflare/Cloudflare_Inc_ECC_CA-3.cer";   
+    conditional_print!("Path of the signed certificate: {}", signed_certificate_path);
+    conditional_print!("Path of the issuer certificate: {}", issuer_certificate_path);
+    let cert: X509Certificate = X509Certificate::new(signed_certificate_path, issuer_certificate_path);
+    cert.print_signature_algorithm();
+    cert
+}
+
+pub fn parse_ecdsa_pk_sig(cert: &X509Certificate) -> Result<(&ECDSAPublicKey, &ECDSASignature)> {
+    if let IssuerKey::StructECDSA(ecdsa_key) = &cert.issuer_key {
+        if let Signature::StructECDSA(ecdsa_signature) = &cert.signature {
+            return Ok((ecdsa_key, ecdsa_signature));
+        }
+    }
+    panic!("Failed to parse ECDSA public key and signature")
+}
+
+pub fn get_message_from_example_cert() -> Vec<u8> {
+    let signed_certificate_path = "./example_cert/cloudflare/www.cloudflare.com.cer";
+    let issuer_certificate_path = "./example_cert/cloudflare/Cloudflare_Inc_ECC_CA-3.cer";   
+    conditional_print!("Path of the signed certificate: {}", signed_certificate_path);
+    conditional_print!("Path of the issuer certificate: {}", issuer_certificate_path);
+    let cert: X509Certificate = X509Certificate::new(signed_certificate_path, issuer_certificate_path);
+    cert.print_signature_algorithm();
+    cert.body
+}
+
 #[allow(unused)]
 fn extract_body_data(signed_certificate_path: &str) -> Vec<u8> {
     // Run the openssl command to extract the body part

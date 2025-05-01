@@ -27,7 +27,6 @@ pub mod create_input;
 pub mod parse_cert;
 pub mod user_input;
 pub mod commitment;
-pub mod poseidon_const;
 pub mod parse_zokrates;
 pub mod math;
 pub mod zkconst;

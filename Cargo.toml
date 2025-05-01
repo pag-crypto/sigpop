@@ -17,6 +17,8 @@ ed25519-dalek = {version="2.1.1", features=["rand_core", "serde"]}
 sha2 = { version = "0.10", default-features = false } # needed to implement hash to curve in spartan
 ark-ff = { version = "0.4.2", default-features = false } # needed by spartan
 ark-ec = { version = "0.4.2", default-features = false} # needed by t256
+ark-secp256r1 = { version = "0.4.0", default-features = false} # needed by gk membership proof
+ark-std = { version = "0.4.0", default-features = false } # needed by gk membership proof
 ark-serialize = {version = "0.4.2", default-features = false } # needed by t256
 openssl = "0.10"
 p256 = "0.13.2"  # Check for the latest version

@@ -46,6 +46,7 @@ use std::sync::Arc;
 #[cfg(feature = "spartan")]
 use crate::right_field_arithmetic::alloc::map_field;
 
+use ark_secp256r1::{Projective as ark_Projective, Fq};
 use crate::conditional_print;
 
 lazy_static! {
@@ -55,7 +56,6 @@ lazy_static! {
     pub static ref HASH_G: P256Point = P256Point::hash_of_generator();
     /// Hash of the generator of P256 in projective form
     pub static ref HASH_G_PROJECT: ProjectivePoint = HASH_G.to_projective_point();
-
     /// H(G)^{-1}
     pub static ref HASH_G_INV: ProjectivePoint = HASH_G_PROJECT.neg();
 }
@@ -521,6 +521,59 @@ impl P256Point {
         }
         let generic_bytes: &<ProjectivePoint as GroupEncoding>::Repr = GenericArray::from_slice(&bytes);
         ProjectivePoint::from_bytes(generic_bytes).expect("Fail to convert bytes to ProjectivePoint")
+    }
+
+    pub fn to_ark_projective_point(&self) -> ark_Projective {
+        use ark_ff::MontFp;
+        use ark_ff::One;
+        use std::str::FromStr;
+        let x_field: Fq = Fq::from_str(&self.x.to_string_radix(10)).unwrap();
+        let y_field: Fq = Fq::from_str(&self.y.to_string_radix(10)).unwrap();
+        // let one: Fq = MontFp!("1");
+        ark_Projective::new(x_field, y_field, Fq::one())
+    }
+
+    pub fn projective_to_ark_projective(input: &ProjectivePoint) -> ark_Projective {
+        use ark_ff::MontFp;
+        use ark_ff::One;
+        use std::str::FromStr;
+        let encoded_point = input.to_encoded_point(false);
+        let result = match encoded_point.coordinates() {
+            Coordinates::Uncompressed { x, y } => {
+                let x_integer = Integer::from_digits(&x, rug::integer::Order::MsfBe);
+                let y_integer = Integer::from_digits(&y, rug::integer::Order::MsfBe);
+                let x_field: Fq = Fq::from_str(&x_integer.to_string_radix(10)).unwrap();
+                let y_field: Fq = Fq::from_str(&y_integer.to_string_radix(10)).unwrap();
+                let result = ark_Projective::new(x_field, y_field, Fq::one());
+                Ok(result)
+            }
+            _ => Err(Error),
+        };
+        result.unwrap()
+    }
+
+    pub fn ark_projective_to_projective(input: &ark_Projective) -> ProjectivePoint {
+        use ark_ec::CurveGroup;
+        let ark_affine = input.into_affine();
+    
+        // Convert the field elements to strings.
+        let x_str = ark_affine.x.to_string();
+        let y_str = ark_affine.y.to_string();
+        
+        // Create rug::Integer representations of the coordinates.
+        let x_integer = rug::Integer::from_str_radix(&x_str, 10)
+            .expect("Failed to convert ark x coordinate to Integer");
+        let y_integer = rug::Integer::from_str_radix(&y_str, 10)
+            .expect("Failed to convert ark y coordinate to Integer");
+        
+        let custom_point = P256Point {
+            x: x_integer,
+            y: y_integer,
+            empty: false,
+        };
+        
+        // Use the already defined conversion to p256::ProjectivePoint.
+        custom_point.to_projective_point()
     }
     
     /// adding two points over P256 curve

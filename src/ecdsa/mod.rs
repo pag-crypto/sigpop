@@ -12,3 +12,4 @@ pub mod transcript;
 pub mod group;
 pub mod random;
 pub mod pure_sigma;
+pub mod ring;

@@ -1,11 +1,12 @@
 //! This module includes implementations for ECDSA signature verification using sigma protocol
 
 use p256::ProjectivePoint;
-use super::convert::{integer_to_scalar, bytes_to_scalar}; //, scalar_to_integer};
+use super::convert::{integer_to_scalar, bytes_to_scalar, scalar_to_integer};
 use rug::Integer;
 use p256::Scalar;
 
 use super::ecdsa::{P256Point};
+
 use crate::ecdsa::transcript::SigmaTranscript;
 use merlin::Transcript;
 
@@ -19,6 +20,7 @@ use serde::{Serialize, Deserialize};
 use super::group::ECPoint;
 use super::group::P256Scalar;
 use crate::commitment::PointCommit;
+use crate::commitment::elgamal::L_ARK;
 use rug::rand::RandState;
 use rand_core::RngCore;
 use rand::SeedableRng;
@@ -96,6 +98,23 @@ pub fn inner_prover<P: AsRef<Path>>(
     params: ECDSASigmaSetupParamsPrior,
     pf_path: P,
 ) {
+    let (proof, opening) = create_proof(
+        verify_key,
+        signature, 
+        message,
+        params,
+    );
+
+    let _ = serialize_into_file(&proof, pf_path);
+}
+
+/// Create Proof
+pub fn create_proof (
+    verify_key: ProjectivePoint,
+    signature: ECDSASignatureVar, 
+    message: &Vec<u8>,
+    params: ECDSASigmaSetupParamsPrior,
+) -> (ECDSASigmaPublicPrior, Integer) {
     let digest_result: Integer = DigestAlgorithm::sha256(message);
     let mut rng_scalar = rand::rngs::StdRng::from_seed([0u8; 32]); // seed ensures reproducibility
 
@@ -108,15 +127,16 @@ pub fn inner_prover<P: AsRef<Path>>(
     let x = signature.point_r.to_affine().x();
     let r_scalar: Scalar = bytes_to_scalar(&x); // scalar in Fq
     let sigma: ECDSASigmaPrior = ECDSASigmaPrior::new(
-        comm_pk, 
+        &comm_pk, 
         &digest_result, 
         &r_scalar, 
         signature, 
         params, 
         &mut rng_scalar
     );
+    let opening = scalar_to_integer(&comm_pk.opening);
 
-    let _ = serialize_into_file(&sigma.public_input, pf_path);
+    (sigma.public_input, opening)
 }
 
 /// Inner Verifier for proof of possesion of ECDSA signatures in prior setting (committed pk, public R and public m)
@@ -149,10 +169,19 @@ impl ECDSASigmaSetupParamsPrior {
         let hash_g_project: ProjectivePoint = hash_g.to_projective_point();
         Self {
             hash_g: hash_g_project,
-            hash_hash_g: hash_g_project,
+            hash_hash_g: P256Point::ark_projective_to_projective(&L_ARK),// ProjectivePoint::GENERATOR,
             g: ProjectivePoint::GENERATOR,
         }
     }
+}
+
+#[derive(Serialize, Deserialize)]
+/// Prover messages for the proof for ECDSA signature verification under prior setting (Commited public key, Public R and Public m)
+pub struct ECDSASigmaPublic {
+    /// Responses
+    pub responses: [P256Scalar; 4],
+    /// Commitments
+    pub comm: [ECPoint; 4],
 }
 
 #[derive(Serialize, Deserialize)]
@@ -215,10 +244,7 @@ impl ECDSASigmaPublicPrior {
 
     /// Verify the sigma proof; Abort if verification fails
     pub fn verify(&self, 
-        // cm_pk: [ProjectivePoint; 2], 
         digest_result: &Integer, 
-        // r: &Scalar, 
-        // pt_r: ProjectivePoint,
         params: ECDSASigmaSetupParamsPrior
     ) {
         let x = self.pt_r.0.to_affine().x();
@@ -258,7 +284,7 @@ pub struct ECDSASigmaPrior {
 impl ECDSASigmaPrior {
     /// Create variables needed for the sigma protocol; ** to do
     pub fn new( 
-        cm_pk: PointCommit, // Commitment to the public key with opening
+        cm_pk: &PointCommit, // Commitment to the public key with opening
         digest_result: &Integer,
         r: &Scalar,
         sign_var: ECDSASignatureVar,

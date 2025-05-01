@@ -337,7 +337,7 @@ fn inner_prover_input_for_single_cert_adv(
     let intermediate = BigNatRSAadv::new(
         &sign_bignat,
         &modul_bignat,
-        quotient_bits, // not sure
+        quotient_bits, 
         limbs_per_gp
     );
     intermediate.alloc(
