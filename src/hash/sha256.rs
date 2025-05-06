@@ -14,6 +14,7 @@ use std::time::Instant;
 use crate::util::timer::print_time;
 use std::sync::Arc;
 
+
 /// Convert the number of blocks to the length of the message
 pub fn n_blocks_to_msg_len(n_block_str: String) -> usize {
     let n_blocks = n_block_str.parse::<usize>().unwrap();
@@ -46,17 +47,16 @@ fn convert_u32_vec_to_integer_vec(input: &Vec<u32>) -> Vec<Integer> {
     output
 }
 
-/// Extract first N-bytes message from the certificate
+/// Get msg_len-length message
 fn extract_message(msg_len: usize) -> Vec<u8> {
-    let signed_certificate_path = "./example_cert/_.google.com.cer";
-    let issuer_certificate_path = "./example_cert/_GTS_CA_1C3.cer";
-    conditional_print!("Path of the signed certificate: {}", signed_certificate_path);
-    conditional_print!("Path of the issuer certificate: {}", issuer_certificate_path);
-    let cert: X509Certificate = X509Certificate::new(signed_certificate_path, issuer_certificate_path);
-    cert.print_signature_algorithm();
+    let mut state: u32 = 0x1234_5678;
+    let mut message = Vec::with_capacity(msg_len);
 
-    let message: &[u8] = &cert.body[0..msg_len];
-    message.to_vec()
+    for _ in 0..msg_len {
+        state = state.wrapping_mul(1664525).wrapping_add(1013904223);
+        message.push((state >> 24) as u8);
+    }
+    message
 }
 
 /// Extract the digest result of first N-bytes message from the certificate

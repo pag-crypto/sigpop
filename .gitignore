@@ -25,3 +25,4 @@ scripts/aby_tests/tests
 /Keys*
 /example_cert/*
 *backup
+Cargo.lock

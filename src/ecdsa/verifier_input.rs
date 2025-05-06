@@ -65,12 +65,6 @@ fn verifier_input_for_ecdsa_inner(cert: X509Certificate, limbwidth: usize, n_lim
 
 /// Verifier input for ECDSA signature verification with sigmabus approach
 pub fn verifer_input_for_ecdsa_sigma() -> HashMap<String, Value>{ // to do
-    let signed_certificate_path = "./example_cert/cloudflare/www.cloudflare.com.cer";
-    let issuer_certificate_path = "./example_cert/cloudflare/Cloudflare_Inc_ECC_CA-3.cer";   
-    conditional_print!("Path of the signed certificate: {}", signed_certificate_path);
-    conditional_print!("Path of the issuer certificate: {}", issuer_certificate_path);
-    let cert: X509Certificate = X509Certificate::new(signed_certificate_path, issuer_certificate_path);
-    cert.print_signature_algorithm();
     let limb_width: usize = 32; //input_number("Please enter the limb_width (16/32/64).").unwrap();
     let n_limbs: usize;
     if limb_width == 64 {
@@ -87,22 +81,20 @@ pub fn verifer_input_for_ecdsa_sigma() -> HashMap<String, Value>{ // to do
     let pf_sigma_path = PathBuf::from("pi_sigma");
 
     let mut input_map = HashMap::<String, Value>::default();
-    if let IssuerKey::StructECDSA(_ecdsa_key) = &cert.issuer_key {
-        let pk_bytes: Vec<u8> = deserialize_from_file("example_cert/ecdsa_public_key").expect("Bytes from public key file"); 
-        let pk_encoded = EncodedPoint::from_bytes(pk_bytes).unwrap();
-        let issuer_key_pt = ProjectivePoint::from_encoded_point(&pk_encoded).unwrap();
-        let p256_const: ECDSASigmaConst = ECDSASigmaConst::new(limb_width, n_limbs);
-        let start = Instant::now();
-        verifier_input_for_ecdsa_sigma(
-            issuer_key_pt, 
-            p256_const, 
-            limb_width, 
-            n_limbs, 
-            pf_sigma_path,
-            "", 
-            & mut input_map);
-        print_time("Time for Compute verifier input", start.elapsed(), true);
-    } else {panic!("Didn't implement other signature algorithms");}
+    let pk_bytes: Vec<u8> = deserialize_from_file("example_cert/ecdsa_public_key").expect("Bytes from public key file"); 
+    let pk_encoded = EncodedPoint::from_bytes(pk_bytes).unwrap();
+    let issuer_key_pt = ProjectivePoint::from_encoded_point(&pk_encoded).unwrap();
+    let p256_const: ECDSASigmaConst = ECDSASigmaConst::new(limb_width, n_limbs);
+    let start = Instant::now();
+    verifier_input_for_ecdsa_sigma(
+        issuer_key_pt, 
+        p256_const, 
+        limb_width, 
+        n_limbs, 
+        pf_sigma_path,
+        "", 
+        & mut input_map);
+    print_time("Time for Compute verifier input", start.elapsed(), true);
     input_map
 }
 

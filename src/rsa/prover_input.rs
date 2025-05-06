@@ -24,6 +24,7 @@ use crate::convert::bignumref_to_integer;
 use crate::target::r1cs::proof::serialize_into_file;
 use crate::hash::sha256::prover_input_for_sha256_adv_inner;
 use crate::hash::sha256::n_blocks_to_msg_len;
+use std::fs;
 //new
 fn inner_prover_input_for_modexpon_for_rsa_v4(a: &Integer, modul: &Integer, limbwidth: usize, n_limbs: usize, constant: bool, limbs_per_gp: usize) -> HashMap<String, Value>{
     let modul_bignat: BigNatWithLimbMax = BigNatWithLimbMax::new(modul, limbwidth, n_limbs, false);   
@@ -258,7 +259,9 @@ impl ProverPrecomputeInput {
         let modulus = private_key.n();
         let modulus_integer: Integer = bignumref_to_integer(modulus)
                 .expect("Failed to parse modulus into Integer");
-        serialize_into_file(&modulus_integer, "example_cert/rsa_modulus").unwrap();
+        fs::create_dir_all("example_cert")
+            .and_then(|_| serialize_into_file(&modulus_integer, "example_cert/rsa_modulus"))
+            .unwrap();
         Self {
             rsa_modulus: modulus_integer,
             signature: os2ip(&signature),

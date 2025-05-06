@@ -12,26 +12,43 @@ use rug::Integer;
 use crate::parse_cert::{X509Certificate, IssuerKey};
 /// Compute verifier input for RSA signature verifications
 pub fn verifier_input_for_verifyrsa(whole: bool, modulus_bits: usize, name: &str) -> HashMap<String, Value>{
-    let signed_certificate_path = "./example_cert/_.google.com.cer";
-    let issuer_certificate_path = "./example_cert/_GTS_CA_1C3.cer";
-    conditional_print!("Path of the signed certificate: {}", signed_certificate_path);
-    conditional_print!("Path of the issuer certificate: {}", issuer_certificate_path);
-    let cert: X509Certificate = X509Certificate::new(signed_certificate_path, issuer_certificate_path);
-    let limbwidth = 32;
-    let n_limbs = 64;
     if modulus_bits != 2048 {
         todo!("Implement other modulus bits");
     }
-    let mut input_map = HashMap::<String, Value>::default();
-    if let IssuerKey::StructRSA(rsa_key) = cert.issuer_key {
-        let modulus: Integer = if whole {deserialize_from_file("example_cert/rsa_modulus").unwrap()} 
-                                else {rsa_key.modulus};
-        let start = Instant::now();
-        inner_verifier_for_rsa(&modulus, limbwidth, n_limbs, name, &mut input_map);
-        print_time("Time for Compute verifier input", start.elapsed(), true);
+
+    let limbwidth = 32;
+    let n_limbs   = 64;
+    let mut input_map = HashMap::default();
+
+    let modulus: Integer = if whole {
+        deserialize_from_file("example_cert/rsa_modulus")
+            .expect("failed to read rsa_modulus")
     } else {
-        panic!("The issuer key is not RSA key");
-    }
+        let signed_certificate_path = "./example_cert/_.google.com.cer";
+        let issuer_certificate_path = "./example_cert/_GTS_CA_1C3.cer";
+
+        conditional_print!(
+            "Path of the signed certificate: {}",
+            signed_certificate_path
+        );
+        conditional_print!(
+            "Path of the issuer certificate: {}",
+            issuer_certificate_path
+        );
+
+        let cert = X509Certificate::new(signed_certificate_path, issuer_certificate_path);
+
+        if let IssuerKey::StructRSA(rsa_key) = cert.issuer_key {
+            rsa_key.modulus
+        } else {
+            panic!("The issuer key is not an RSA key");
+        }
+    };
+
+    let start = Instant::now();
+    inner_verifier_for_rsa(&modulus, limbwidth, n_limbs, name, &mut input_map);
+    print_time("Time for Compute verifier input", start.elapsed(), true);
+
     input_map
 }
 
